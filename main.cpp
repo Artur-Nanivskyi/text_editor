@@ -47,6 +47,21 @@ void appendText(TextStorage *storage, size_t lineIndex, const char *text) {
     line->length = newLength;
 }
 
+void addNewLine(TextStorage *storage) {
+    if (storage->count >= storage->capacity) {
+        storage->capacity *= 2;
+        storage->lines = (Line *)realloc(storage->lines, storage->capacity * sizeof(Line));
+    }
+
+    initLine(&storage->lines[storage->count++]);
+    printf("New line is started\n");
+}
+
+void printText(const TextStorage *storage) {
+    for (size_t i = 0; i < storage->count; ++i) {
+        printf("%s\n", storage->lines[i].text);
+    }
+}
 
 // Enum to represent the commands
 typedef enum {
@@ -56,7 +71,7 @@ typedef enum {
     load_from_file,
     print_current_text,
     insert_text_by_index,
-    search_text_by_index,
+    search_text,
     exit_program = 0
 } Command;
 
@@ -101,7 +116,7 @@ int main() {
             case insert_text_by_index:
                 printf("Insert text by line and symbol index \n");
                 break;
-            case search_text_by_index:
+            case search_text:
                 printf("Search text \n");
                 break;
             case exit_program:
