@@ -29,6 +29,23 @@ void initTextStorage(TextStorage *storage) {
     initLine(&storage->lines[storage->count++]);
 }
 
+void appendText(TextStorage *storage, size_t lineIndex, const char *text) {
+    if (lineIndex >= storage->count) {
+        printf("Line index out of bounds\n");
+        return;
+    }
+
+    Line *line = &storage->lines[lineIndex];
+    size_t newLength = line->length + strlen(text);
+
+    if (newLength >= line->capacity) {
+        line->capacity = newLength + 1;
+        line->text = (char *)realloc(line->text, line->capacity * sizeof(char));
+    }
+
+    strcat(line->text, text);
+    line->length = newLength;
+}
 
 
 // Enum to represent the commands
