@@ -2,6 +2,35 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define INITIAL_CAPACITY 100
+typedef struct {
+    char *text;
+    size_t length;
+    size_t capacity;
+} Line;
+
+typedef struct {
+    Line *lines;
+    size_t count;
+    size_t capacity;
+} TextStorage;
+
+void initLine(Line *line) {
+    line->capacity = INITIAL_CAPACITY;
+    line->length = 0;
+    line->text = (char *)malloc(line->capacity * sizeof(char));
+    line->text[0] = '\0';
+}
+
+void initTextStorage(TextStorage *storage) {
+    storage->capacity = INITIAL_CAPACITY;
+    storage->count = 0;
+    storage->lines = (Line *)malloc(storage->capacity * sizeof(Line));
+    initLine(&storage->lines[storage->count++]);
+}
+
+
+
 // Enum to represent the commands
 typedef enum {
     append_text = 1,
