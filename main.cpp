@@ -63,6 +63,28 @@ void printText(const TextStorage *storage) {
     }
 }
 
+void insertText(TextStorage *storage, size_t lineIndex, size_t position, const char *text) {
+    if (lineIndex >= storage->count) {
+        printf("Line index out of bounds\n");
+        return;
+    }
+
+    Line *line = &storage->lines[lineIndex];
+    if (position > line->length) {
+        printf("Position out of bounds\n");
+        return;
+    }
+
+    size_t newLength = line->length + strlen(text);
+    if (newLength >= line->capacity) {
+        line->capacity = newLength + 1;
+        line->text = (char *)realloc(line->text, line->capacity * sizeof(char));
+    }
+
+    memmove(line->text + position + strlen(text), line->text + position, line->length - position + 1);
+    memcpy(line->text + position, text, strlen(text));
+    line->length = newLength;
+}
 // Enum to represent the commands
 typedef enum {
     append_text = 1,
