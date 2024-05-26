@@ -85,6 +85,52 @@ void insertText(TextStorage *storage, size_t lineIndex, size_t position, const c
     memcpy(line->text + position, text, strlen(text));
     line->length = newLength;
 }
+
+void saveToFile(const TextStorage *storage, const char *filename) {
+    FILE *file = fopen(filename, "a");
+    if (!file) {
+
+        file = fopen(filename, "w");
+        if (!file) {
+            printf("Error opening file for writing\n");
+            return;
+        }
+    }
+
+    for (size_t i = 0; i < storage->count; ++i) {
+        fprintf(file, "%s\n", storage->lines[i].text);
+    }
+
+    fclose(file);
+    printf("Text has been saved successfully\n");
+}
+
+
+void loadFromFile(TextStorage *storage, const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        printf("Error opening file for reading\n");
+        return;
+    }
+
+    for (size_t i = 0; i < storage->count; ++i) {
+        free(storage->lines[i].text);
+    }
+    free(storage->lines);
+
+    initTextStorage(storage);
+
+    char buffer[INITIAL_CAPACITY];
+    while (fgets(buffer, INITIAL_CAPACITY, file)) {
+        buffer[strcspn(buffer, "\n")] = '\0';
+        appendText(storage, storage->count - 1, buffer);
+        addNewLine(storage);
+    }
+
+    fclose(file);
+    printf("Text has been loaded successfully\n");
+}
+
 // Enum to represent the commands
 typedef enum {
     append_text = 1,
