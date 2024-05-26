@@ -131,6 +131,28 @@ void loadFromFile(TextStorage *storage, const char *filename) {
     printf("Text has been loaded successfully\n");
 }
 
+void searchSubstring(const TextStorage *storage, const char *substring) {
+    int found = 0;
+
+    for (size_t i = 0; i < storage->count; ++i) {
+        const char *line = storage->lines[i].text;
+        const char *pos = strstr(line, substring);
+        while (pos) {
+            printf("Text is present in this position: %zu %zu\n", i, pos - line);
+            found = 1;
+            pos = strstr(pos + 1, substring);
+        }
+    }
+
+    if (!found) {
+        printf("Substring not found\n");
+    }
+}
+
+void clearConsole() {
+    printf("\033[2J\033[1;1H");
+}
+
 // Enum to represent the commands
 typedef enum {
     append_text = 1,
