@@ -180,37 +180,67 @@ void printHelpInfo()
 }
 
 int main() {
-    int command;
+    TextStorage storage;
+    initTextStorage(&storage);
 
-    while (true) {
+    int command;
+    char buffer[INITIAL_CAPACITY];
+
+    while (1) {
+        clearConsole();
         printHelpInfo();
         printf("> ");
         scanf("%d", &command);
+        getchar(); // Consume the newline character left by scanf
 
         switch (command) {
-            case  append_text:
-                printf("Append text symbols to the end \n");
+            case append_text:
+                printf("Enter text to append: ");
+                fgets(buffer, sizeof(buffer), stdin);
+                buffer[strcspn(buffer, "\n")] = '\0';
+                appendText(&storage, storage.count - 1, buffer);
                 break;
             case start_new_line:
-                printf("Start a new line \n");
+                addNewLine(&storage);
                 break;
             case save_to_file:
-                printf("Save text to file \n");
+                printf("Enter the file name for saving: ");
+                fgets(buffer, sizeof(buffer), stdin);
+                buffer[strcspn(buffer, "\n")] = '\0';
+                saveToFile(&storage, buffer);
                 break;
             case  load_from_file:
-                printf("Load text from file \n");
+                printf("Enter the file name for loading: ");
+                fgets(buffer, sizeof(buffer), stdin);
+                buffer[strcspn(buffer, "\n")] = '\0';
+                loadFromFile(&storage, buffer);
                 break;
-            case  print_current_text:
-                printf("Print the current text to console \n");
+            case print_current_text:
+                printText(&storage);
                 break;
-            case insert_text_by_index:
-                printf("Insert text by line and symbol index \n");
+            case insert_text_by_index: {
+                size_t lineIndex, position;
+                printf("Choose line and index: ");
+                scanf("%zu %zu", &lineIndex, &position);
+                getchar(); // Consume the newline character left by scanf
+                printf("Enter text to insert: ");
+                fgets(buffer, sizeof(buffer), stdin);
+                buffer[strcspn(buffer, "\n")] = '\0';
+                insertText(&storage, lineIndex, position, buffer);
                 break;
+            }
             case search_text:
-                printf("Search text \n");
+                printf("Enter text to search: ");
+                fgets(buffer, sizeof(buffer), stdin);
+                buffer[strcspn(buffer, "\n")] = '\0';
+                searchSubstring(&storage, buffer);
                 break;
-            case exit_program:
+            case  exit_program :
                 printf("Exiting the program.\n");
+                for (size_t i = 0; i < storage.count; ++i) {
+                    free(storage.lines[i].text);
+                }
+                free(storage.lines);
                 return 0;
             default:
                 printf("The command is not implemented\n");
