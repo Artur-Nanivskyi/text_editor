@@ -254,6 +254,16 @@ public:
         saveState();
         lines[lineIndex].insertText(pos, clipboard);
     }
+    void copyText(size_t lineIndex, size_t pos, size_t len) {
+        if (lineIndex >= count) {
+            std::cerr << "Line index out of bounds\n";
+            return;
+        }
+        if (clipboard) delete[] clipboard;
+        clipboard = new char[len + 1];
+        strncpy(clipboard, lines[lineIndex].getText() + pos, len);
+        clipboard[len] = '\0';
+    }
 
 
     typedef enum {
@@ -269,6 +279,7 @@ public:
         redo_action,
         cut_text,
         paste_text,
+        copy_text,
         exit_program = 0
     } Command;
 
@@ -286,6 +297,7 @@ public:
         std::cout << "10. Redo\n";
         std::cout << "11. Cut text\n";
         std::cout << "12. Paste text\n";
+        std::cout << "13. Copy text\n";
         std::cout << "0. Exit\n";
     }
 };
@@ -368,6 +380,14 @@ int main() {
                 std::cin >> lineIndex >> position;
                 std::cin.ignore();
                 storage.pasteText(lineIndex, position);
+                break;
+            }
+            case TextStorage::copy_text: {
+                size_t lineIndex, position, length;
+                std::cout << "Choose line, index and length: ";
+                std::cin >> lineIndex >> position >> length;
+                std::cin.ignore();
+                storage.copyText(lineIndex, position, length);
                 break;
             }
             case TextStorage::exit_program:
