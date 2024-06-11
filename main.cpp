@@ -64,6 +64,28 @@ public:
         memmove(text + pos, text + pos + len, length - pos - len + 1);
         length -= len;
     }
+    void insertWithReplace(size_t pos, const char *str) {
+        if (pos > length) {
+            std::cerr << "Position out of bounds\n";
+            return;
+        }
+        size_t strLength = strlen(str);
+        size_t newLength = pos + strLength;
+        if (newLength >= capacity) {
+            capacity = newLength + 1;
+            char *newText = new char[capacity];
+            strncpy(newText, text, pos);
+            newText[pos] = '\0';
+            strcat(newText, str);
+            delete[] text;
+            text = newText;
+        } else {
+            strncpy(text + pos, str, strLength);
+            text[newLength] = '\0';
+        }
+        length = newLength;
+    }
+
     const char* getText() const {
         return text;
     }
@@ -264,6 +286,14 @@ public:
         strncpy(clipboard, lines[lineIndex].getText() + pos, len);
         clipboard[len] = '\0';
     }
+    void insertWithReplace(size_t lineIndex, size_t pos, const char *text) {
+        if (lineIndex >= count) {
+            std::cerr << "Line index out of bounds\n";
+            return;
+        }
+        saveState();
+        lines[lineIndex].insertWithReplace(pos, text);
+    }
 
 
     typedef enum {
@@ -280,6 +310,7 @@ public:
         cut_text,
         paste_text,
         copy_text,
+        insert_with_replace,
         exit_program = 0
     } Command;
 
@@ -298,6 +329,7 @@ public:
         std::cout << "11. Cut text\n";
         std::cout << "12. Paste text\n";
         std::cout << "13. Copy text\n";
+        std::cout << "14. Insert text by line and symbol index with replacement\n";
         std::cout << "0. Exit\n";
     }
 };
@@ -388,6 +420,16 @@ int main() {
                 std::cin >> lineIndex >> position >> length;
                 std::cin.ignore();
                 storage.copyText(lineIndex, position, length);
+                break;
+            }
+            case TextStorage::insert_with_replace: {
+                size_t lineIndex, position;
+                std::cout << "Choose line and index: ";
+                std::cin >> lineIndex >> position;
+                std::cin.ignore();
+                std::cout << "Enter text to replace: ";
+                std::cin.getline(buffer, sizeof(buffer));
+                storage.insertWithReplace(lineIndex, position, buffer);
                 break;
             }
             case TextStorage::exit_program:
