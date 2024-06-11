@@ -230,6 +230,30 @@ public:
         lines = redoStack.top();
         redoStack.pop();
     }
+    void cutText(size_t lineIndex, size_t pos, size_t len) {
+        if (lineIndex >= count) {
+            std::cerr << "Line index out of bounds\n";
+            return;
+        }
+        saveState();
+        if (clipboard) delete[] clipboard;
+        clipboard = new char[len + 1];
+        strncpy(clipboard, lines[lineIndex].getText() + pos, len);
+        clipboard[len] = '\0';
+        deleteText(lineIndex, pos, len);
+    }
+    void pasteText(size_t lineIndex, size_t pos) {
+        if (lineIndex >= count) {
+            std::cerr << "Line index out of bounds\n";
+            return;
+        }
+        if (!clipboard) {
+            std::cerr << "Clipboard is empty\n";
+            return;
+        }
+        saveState();
+        lines[lineIndex].insertText(pos, clipboard);
+    }
 
 
     typedef enum {
@@ -243,6 +267,8 @@ public:
         delete_text,
         undo_action,
         redo_action,
+        cut_text,
+        paste_text,
         exit_program = 0
     } Command;
 
@@ -258,6 +284,8 @@ public:
         std::cout << "8. Delete text\n";
         std::cout << "9. Undo\n";
         std::cout << "10. Redo\n";
+        std::cout << "11. Cut text\n";
+        std::cout << "12. Paste text\n";
         std::cout << "0. Exit\n";
     }
 };
@@ -326,6 +354,22 @@ int main() {
             case TextStorage::redo_action:
                 storage.redo();
                 break;
+            case TextStorage::cut_text: {
+                size_t lineIndex, position, length;
+                std::cout << "Choose line, index and length: ";
+                std::cin >> lineIndex >> position >> length;
+                std::cin.ignore();
+                storage.cutText(lineIndex, position, length);
+                break;
+            }
+            case TextStorage::paste_text: {
+                size_t lineIndex, position;
+                std::cout << "Choose line and index: ";
+                std::cin >> lineIndex >> position;
+                std::cin.ignore();
+                storage.pasteText(lineIndex, position);
+                break;
+            }
             case TextStorage::exit_program:
                 std::cout << "Exiting the program.\n";
                 return 0;
