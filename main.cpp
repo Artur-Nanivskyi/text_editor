@@ -149,11 +149,6 @@ public:
         outFile.close();
         std::cout << "Text has been saved successfully\n";
     }
-    void printText() const {
-        for (size_t i = 0; i < count; ++i) {
-            std::cout << lines[i].getText() << std::endl;
-        }
-    }
     void loadFromFile(const char *filename) {
         std::ifstream inFile(filename);
         if (!inFile) {
@@ -180,6 +175,11 @@ public:
         }
         inFile.close();
         std::cout << "Text has been loaded successfully\n";
+    }
+    void printText() const {
+        for (size_t i = 0; i < count; ++i) {
+            std::cout << lines[i].getText() << std::endl;
+        }
     }
     void insertText(size_t lineIndex, size_t pos, const char *text) {
         if (lineIndex >= count) {
@@ -221,6 +221,15 @@ public:
         lines = undoStack.top();
         undoStack.pop();
     }
+    void redo() {
+        if (redoStack.empty()) {
+            std::cerr << "No more redo steps available\n";
+            return;
+        }
+        undoStack.push(lines);
+        lines = redoStack.top();
+        redoStack.pop();
+    }
 
 
     typedef enum {
@@ -233,6 +242,7 @@ public:
         search_text,
         delete_text,
         undo_action,
+        redo_action,
         exit_program = 0
     } Command;
 
@@ -247,6 +257,7 @@ public:
         std::cout << "7. Search text\n";
         std::cout << "8. Delete text\n";
         std::cout << "9. Undo\n";
+        std::cout << "10. Redo\n";
         std::cout << "0. Exit\n";
     }
 };
@@ -311,6 +322,9 @@ int main() {
             }
             case TextStorage::undo_action:
                 storage.undo();
+                break;
+            case TextStorage::redo_action:
+                storage.redo();
                 break;
             case TextStorage::exit_program:
                 std::cout << "Exiting the program.\n";
