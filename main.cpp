@@ -212,6 +212,15 @@ public:
         saveState();
         lines[lineIndex].deleteText(pos, len);
     }
+    void undo() {
+        if (undoStack.empty()) {
+            std::cerr << "No more undo steps available\n";
+            return;
+        }
+        redoStack.push(lines);
+        lines = undoStack.top();
+        undoStack.pop();
+    }
 
 
     typedef enum {
@@ -223,6 +232,7 @@ public:
         insert_text_by_index,
         search_text,
         delete_text,
+        undo_action,
         exit_program = 0
     } Command;
 
@@ -236,6 +246,7 @@ public:
         std::cout << "6. Insert text by line and symbol index\n";
         std::cout << "7. Search text\n";
         std::cout << "8. Delete text\n";
+        std::cout << "9. Undo\n";
         std::cout << "0. Exit\n";
     }
 };
@@ -298,6 +309,9 @@ int main() {
                 storage.deleteText(lineIndex, position, length);
                 break;
             }
+            case TextStorage::undo_action:
+                storage.undo();
+                break;
             case TextStorage::exit_program:
                 std::cout << "Exiting the program.\n";
                 return 0;
