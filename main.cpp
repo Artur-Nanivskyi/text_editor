@@ -56,7 +56,14 @@ public:
         }
         length = newLength;
     }
-
+    void deleteText(size_t pos, size_t len) {
+        if (pos >= length || pos + len > length) {
+            std::cerr << "Position and length out of bounds\n";
+            return;
+        }
+        memmove(text + pos, text + pos + len, length - pos - len + 1);
+        length -= len;
+    }
     const char* getText() const {
         return text;
     }
@@ -118,7 +125,6 @@ public:
         saveState();
         lines[lineIndex].appendText(text);
     }
-
     void addNewLine() {
         if (count >= capacity) {
             capacity *= 2;
@@ -131,8 +137,6 @@ public:
         }
         lines[count++] = Line();
     }
-
-
     void saveToFile(const char *filename) const {
         std::ofstream outFile(filename);
         if (!outFile) {
@@ -177,7 +181,6 @@ public:
         inFile.close();
         std::cout << "Text has been loaded successfully\n";
     }
-
     void insertText(size_t lineIndex, size_t pos, const char *text) {
         if (lineIndex >= count) {
             std::cerr << "Line index out of bounds\n";
@@ -201,6 +204,14 @@ public:
             std::cout << "Substring not found\n";
         }
     }
+    void deleteText(size_t lineIndex, size_t pos, size_t len) {
+        if (lineIndex >= count) {
+            std::cerr << "Line index out of bounds\n";
+            return;
+        }
+        saveState();
+        lines[lineIndex].deleteText(pos, len);
+    }
 
 
     typedef enum {
@@ -211,6 +222,7 @@ public:
         print_current_text,
         insert_text_by_index,
         search_text,
+        delete_text,
         exit_program = 0
     } Command;
 
@@ -223,6 +235,7 @@ public:
         std::cout << "5. Print the current text to console\n";
         std::cout << "6. Insert text by line and symbol index\n";
         std::cout << "7. Search text\n";
+        std::cout << "8. Delete text\n";
         std::cout << "0. Exit\n";
     }
 };
@@ -277,6 +290,14 @@ int main() {
                 storage.searchText(buffer);
                 break;
 
+            case TextStorage::delete_text: {
+                size_t lineIndex, position, length;
+                std::cout << "Choose line, index and length: ";
+                std::cin >> lineIndex >> position >> length;
+                std::cin.ignore();
+                storage.deleteText(lineIndex, position, length);
+                break;
+            }
             case TextStorage::exit_program:
                 std::cout << "Exiting the program.\n";
                 return 0;
