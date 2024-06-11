@@ -1,250 +1,289 @@
-#include <string>
-#include <stdio.h>
-#include <stdlib.h>
+#include <iostream>
+#include <fstream>
+#include <cstring>
+#include <stack>
 
 #define INITIAL_CAPACITY 100
-typedef struct {
+
+class Line {
+private:
     char *text;
     size_t length;
     size_t capacity;
-} Line;
 
-typedef struct {
+public:
+    Line() {
+        capacity = INITIAL_CAPACITY;
+        length = 0;
+        text = new char[capacity];
+        text[0] = '\0';
+    }
+
+    ~Line() {
+        delete[] text;
+    }
+
+    void appendText(const char *str) {
+        size_t newLength = length + strlen(str);
+        if (newLength >= capacity) {
+            capacity = newLength + 1;
+            char *newText = new char[capacity];
+            strcpy(newText, text);
+            delete[] text;
+            text = newText;
+        }
+        strcat(text, str);
+        length = newLength;
+    }
+    void insertText(size_t pos, const char *str) {
+        if (pos > length) {
+            std::cerr << "Position out of bounds\n";
+            return;
+        }
+        size_t newLength = length + strlen(str);
+        if (newLength >= capacity) {
+            capacity = newLength + 1;
+            char *newText = new char[capacity];
+            strncpy(newText, text, pos);
+            newText[pos] = '\0';
+            strcat(newText, str);
+            strcat(newText, text + pos);
+            delete[] text;
+            text = newText;
+        } else {
+            memmove(text + pos + strlen(str), text + pos, length - pos + 1);
+            memcpy(text + pos, str, strlen(str));
+        }
+        length = newLength;
+    }
+
+    const char* getText() const {
+        return text;
+    }
+
+};
+
+class TextStorage {
+private:
     Line *lines;
     size_t count;
     size_t capacity;
-} TextStorage;
+    char *clipboard;
+    std::stack<Line *> undoStack;
+    std::stack<Line *> redoStack;
 
-void initLine(Line *line) {
-    line->capacity = INITIAL_CAPACITY;
-    line->length = 0;
-    line->text = (char *)malloc(line->capacity * sizeof(char));
-    line->text[0] = '\0';
-}
-
-void initTextStorage(TextStorage *storage) {
-    storage->capacity = INITIAL_CAPACITY;
-    storage->count = 0;
-    storage->lines = (Line *)malloc(storage->capacity * sizeof(Line));
-    initLine(&storage->lines[storage->count++]);
-}
-
-void appendText(TextStorage *storage, size_t lineIndex, const char *text) {
-    if (lineIndex >= storage->count) {
-        printf("Line index out of bounds\n");
-        return;
+    void saveState() {
+        Line *currentState = new Line[count];
+        for (size_t i = 0; i < count; ++i) {
+            currentState[i].appendText(lines[i].getText());
+        }
+        undoStack.push(currentState);
+        while (!redoStack.empty()) {
+            delete[] redoStack.top();
+            redoStack.pop();
+        }
     }
 
-    Line *line = &storage->lines[lineIndex];
-    size_t newLength = line->length + strlen(text);
-
-    if (newLength >= line->capacity) {
-        line->capacity = newLength + 1;
-        line->text = (char *)realloc(line->text, line->capacity * sizeof(char));
+    void deleteLines() {
+        delete[] lines;
     }
 
-    strcat(line->text, text);
-    line->length = newLength;
-}
-
-void addNewLine(TextStorage *storage) {
-    if (storage->count >= storage->capacity) {
-        storage->capacity *= 2;
-        storage->lines = (Line *)realloc(storage->lines, storage->capacity * sizeof(Line));
+public:
+    TextStorage() {
+        capacity = INITIAL_CAPACITY;
+        count = 1;
+        lines = new Line[capacity];
+        clipboard = nullptr;
     }
-
-    initLine(&storage->lines[storage->count++]);
-    printf("New line is started\n");
-}
-
-void printText(const TextStorage *storage) {
-    for (size_t i = 0; i < storage->count; ++i) {
-        printf("%s\n", storage->lines[i].text);
+    ~TextStorage() {
+        deleteLines();
+        if (clipboard) delete[] clipboard;
+        while (!undoStack.empty()) {
+            delete[] undoStack.top();
+            undoStack.pop();
+        }
+        while (!redoStack.empty()) {
+            delete[] redoStack.top();
+            redoStack.pop();
+        }
     }
-}
-
-void insertText(TextStorage *storage, size_t lineIndex, size_t position, const char *text) {
-    if (lineIndex >= storage->count) {
-        printf("Line index out of bounds\n");
-        return;
+    size_t getLineCount() const {
+        return count;
     }
-
-    Line *line = &storage->lines[lineIndex];
-    if (position > line->length) {
-        printf("Position out of bounds\n");
-        return;
-    }
-
-    size_t newLength = line->length + strlen(text);
-    if (newLength >= line->capacity) {
-        line->capacity = newLength + 1;
-        line->text = (char *)realloc(line->text, line->capacity * sizeof(char));
-    }
-
-    memmove(line->text + position + strlen(text), line->text + position, line->length - position + 1);
-    memcpy(line->text + position, text, strlen(text));
-    line->length = newLength;
-}
-
-void saveToFile(const TextStorage *storage, const char *filename) {
-    FILE *file = fopen(filename, "a");
-    if (!file) {
-
-        file = fopen(filename, "w");
-        if (!file) {
-            printf("Error opening file for writing\n");
+    void appendText(size_t lineIndex, const char *text) {
+        if (lineIndex >= count) {
+            std::cerr << "Line index out of bounds\n";
             return;
         }
+        saveState();
+        lines[lineIndex].appendText(text);
     }
 
-    for (size_t i = 0; i < storage->count; ++i) {
-        fprintf(file, "%s\n", storage->lines[i].text);
+    void addNewLine() {
+        if (count >= capacity) {
+            capacity *= 2;
+            Line *newLines = new Line[capacity];
+            for (size_t i = 0; i < count; ++i) {
+                newLines[i].appendText(lines[i].getText());
+            }
+            delete[] lines;
+            lines = newLines;
+        }
+        lines[count++] = Line();
     }
 
-    fclose(file);
-    printf("Text has been saved successfully\n");
-}
 
-
-void loadFromFile(TextStorage *storage, const char *filename) {
-    FILE *file = fopen(filename, "r");
-    if (!file) {
-        printf("Error opening file for reading\n");
-        return;
+    void saveToFile(const char *filename) const {
+        std::ofstream outFile(filename);
+        if (!outFile) {
+            std::cerr << "Error opening file for writing\n";
+            return;
+        }
+        for (size_t i = 0; i < count; ++i) {
+            outFile << lines[i].getText() << "\n";
+        }
+        outFile.close();
+        std::cout << "Text has been saved successfully\n";
+    }
+    void printText() const {
+        for (size_t i = 0; i < count; ++i) {
+            std::cout << lines[i].getText() << std::endl;
+        }
+    }
+    void loadFromFile(const char *filename) {
+        std::ifstream inFile(filename);
+        if (!inFile) {
+            std::cerr << "Error opening file for reading\n";
+            return;
+        }
+        saveState();
+        deleteLines();
+        capacity = INITIAL_CAPACITY;
+        count = 0;
+        lines = new Line[capacity];
+        char buffer[INITIAL_CAPACITY];
+        while (inFile.getline(buffer, INITIAL_CAPACITY)) {
+            if (count >= capacity) {
+                capacity *= 2;
+                Line *newLines = new Line[capacity];
+                for (size_t i = 0; i < count; ++i) {
+                    newLines[i].appendText(lines[i].getText());
+                }
+                delete[] lines;
+                lines = newLines;
+            }
+            appendText(count++, buffer);
+        }
+        inFile.close();
+        std::cout << "Text has been loaded successfully\n";
     }
 
-    for (size_t i = 0; i < storage->count; ++i) {
-        free(storage->lines[i].text);
-    }
-    free(storage->lines);
+    void insertText(size_t lineIndex, size_t pos, const char *text) {
+        if (lineIndex >= count) {
+            std::cerr << "Line index out of bounds\n";
+            return;
+        }
+        saveState();
+        lines[lineIndex].insertText(pos, text);
 
-    initTextStorage(storage);
-
-    char buffer[INITIAL_CAPACITY];
-    while (fgets(buffer, INITIAL_CAPACITY, file)) {
-        buffer[strcspn(buffer, "\n")] = '\0';
-        appendText(storage, storage->count - 1, buffer);
-        addNewLine(storage);
-    }
-
-    fclose(file);
-    printf("Text has been loaded successfully\n");
-}
-
-void searchSubstring(const TextStorage *storage, const char *substring) {
-    int found = 0;
-
-    for (size_t i = 0; i < storage->count; ++i) {
-        const char *line = storage->lines[i].text;
-        const char *pos = strstr(line, substring);
-        while (pos) {
-            printf("Text is present in this position: %zu %zu\n", i, pos - line);
-            found = 1;
-            pos = strstr(pos + 1, substring);
+    };
+    void searchText(const char *substring) const {
+        bool found = false;
+        for (size_t i = 0; i < count; ++i) {
+            const char *pos = strstr(lines[i].getText(), substring);
+            while (pos) {
+                std::cout << "Text is present in this position: " << i << " " << pos - lines[i].getText() << std::endl;
+                found = true;
+                pos = strstr(pos + 1, substring);
+            }
+        }
+        if (!found) {
+            std::cout << "Substring not found\n";
         }
     }
 
-    if (!found) {
-        printf("Substring not found\n");
+
+    typedef enum {
+        append_text = 1,
+        start_new_line,
+        save_to_file,
+        load_from_file,
+        print_current_text,
+        insert_text_by_index,
+        search_text,
+        exit_program = 0
+    } Command;
+
+    void printHelpInfo() {
+        std::cout << "> Choose the command:\n";
+        std::cout << "1. Append text symbols to the end\n";
+        std::cout << "2. Start a new line\n";
+        std::cout << "3. Save text to file\n";
+        std::cout << "4. Load text from file\n";
+        std::cout << "5. Print the current text to console\n";
+        std::cout << "6. Insert text by line and symbol index\n";
+        std::cout << "7. Search text\n";
+        std::cout << "0. Exit\n";
     }
-}
-
-void clearConsole() {
-    printf("\033[2J\033[1;1H");
-}
-
-// Enum to represent the commands
-typedef enum {
-    append_text = 1,
-    start_new_line,
-    save_to_file,
-    load_from_file,
-    print_current_text,
-    insert_text_by_index,
-    search_text,
-    exit_program = 0
-} Command;
-
-//Function for printing help information
-void printHelpInfo()
-{
-    printf(">Choose the command:\n");
-    printf("1. Append text symbols to the end\n");
-    printf("2. Start a new line\n");
-    printf("3. Save text to file\n");
-    printf("4. Load text from file\n");
-    printf("5. Print the current text to console\n");
-    printf("6. Insert text by line and symbol index\n");
-    printf("7. Search text\n");
-    printf("0. Exit\n");
-}
+};
 
 int main() {
     TextStorage storage;
-    initTextStorage(&storage);
-
     int command;
     char buffer[INITIAL_CAPACITY];
 
-    while (1) {
-        clearConsole();
-        printHelpInfo();
-        printf("> ");
-        scanf("%d", &command);
-        getchar(); // Consume the newline character left by scanf
+    while (true) {
+        system("clear");
+        storage.printHelpInfo();
+        std::cout << "> ";
+        std::cin >> command;
+        std::cin.ignore();
 
         switch (command) {
-            case append_text:
-                printf("Enter text to append: ");
-                fgets(buffer, sizeof(buffer), stdin);
-                buffer[strcspn(buffer, "\n")] = '\0';
-                appendText(&storage, storage.count - 1, buffer);
+            case TextStorage::append_text:
+                std::cout << "Enter text to append: ";
+                std::cin.getline(buffer, sizeof(buffer));
+                storage.appendText(storage.getLineCount() - 1, buffer);
                 break;
-            case start_new_line:
-                addNewLine(&storage);
+            case TextStorage::start_new_line:
+                storage.addNewLine();
                 break;
-            case save_to_file:
-                printf("Enter the file name for saving: ");
-                fgets(buffer, sizeof(buffer), stdin);
-                buffer[strcspn(buffer, "\n")] = '\0';
-                saveToFile(&storage, buffer);
+            case TextStorage::save_to_file:
+                std::cout << "Enter the file name for saving: ";
+                std::cin.getline(buffer, sizeof(buffer));
+                storage.saveToFile(buffer);
                 break;
-            case  load_from_file:
-                printf("Enter the file name for loading: ");
-                fgets(buffer, sizeof(buffer), stdin);
-                buffer[strcspn(buffer, "\n")] = '\0';
-                loadFromFile(&storage, buffer);
+            case TextStorage::load_from_file:
+                std::cout << "Enter the file name for loading: ";
+                std::cin.getline(buffer, sizeof(buffer));
+                storage.loadFromFile(buffer);
                 break;
-            case print_current_text:
-                printText(&storage);
+            case TextStorage::print_current_text:
+                storage.printText();
                 break;
-            case insert_text_by_index: {
+            case TextStorage::insert_text_by_index: {
                 size_t lineIndex, position;
-                printf("Choose line and index: ");
-                scanf("%zu %zu", &lineIndex, &position);
-                getchar(); // Consume the newline character left by scanf
-                printf("Enter text to insert: ");
-                fgets(buffer, sizeof(buffer), stdin);
-                buffer[strcspn(buffer, "\n")] = '\0';
-                insertText(&storage, lineIndex, position, buffer);
+                std::cout << "Choose line and index: ";
+                std::cin >> lineIndex >> position;
+                std::cin.ignore();
+                std::cout << "Enter text to insert: ";
+                std::cin.getline(buffer, sizeof(buffer));
+                storage.insertText(lineIndex, position, buffer);
                 break;
             }
-            case search_text:
-                printf("Enter text to search: ");
-                fgets(buffer, sizeof(buffer), stdin);
-                buffer[strcspn(buffer, "\n")] = '\0';
-                searchSubstring(&storage, buffer);
+            case TextStorage::search_text:
+                std::cout << "Enter text to search: ";
+                std::cin.getline(buffer, sizeof(buffer));
+                storage.searchText(buffer);
                 break;
-            case  exit_program :
-                printf("Exiting the program.\n");
-                for (size_t i = 0; i < storage.count; ++i) {
-                    free(storage.lines[i].text);
-                }
-                free(storage.lines);
+
+            case TextStorage::exit_program:
+                std::cout << "Exiting the program.\n";
                 return 0;
             default:
-                printf("The command is not implemented\n");
+                std::cout << "The command is not implemented\n";
         }
+
     }
 
     return 0;
