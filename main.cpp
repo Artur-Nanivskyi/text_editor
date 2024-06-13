@@ -258,12 +258,10 @@ public:
             return;
         }
         saveState();
-        if (clipboard) delete[] clipboard;
-        clipboard = new char[len + 1];
-        strncpy(clipboard, lines[lineIndex].getText() + pos, len);
-        clipboard[len] = '\0';
+        copyText(lineIndex, pos, len);
         deleteText(lineIndex, pos, len);
     }
+
     void pasteText(size_t lineIndex, size_t pos) {
         if (lineIndex >= count) {
             std::cerr << "Line index out of bounds\n";
