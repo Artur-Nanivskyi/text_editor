@@ -71,18 +71,27 @@ public:
         }
         size_t strLength = strlen(str);
         size_t newLength = pos + strLength;
+
         if (newLength >= capacity) {
             capacity = newLength + 1;
             char *newText = new char[capacity];
             strncpy(newText, text, pos);
             newText[pos] = '\0';
             strcat(newText, str);
+            if (pos + strLength < length) {
+                strcat(newText, text + pos + strLength);
+            }
             delete[] text;
             text = newText;
         } else {
             strncpy(text + pos, str, strLength);
-            text[newLength] = '\0';
+            if (newLength < length) {
+                memmove(text + newLength, text + pos + strLength, length - pos - strLength + 1);
+            } else {
+                text[newLength] = '\0';
+            }
         }
+
         length = newLength;
     }
 
