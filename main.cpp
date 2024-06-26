@@ -19,74 +19,95 @@ public:
         text[0] = '\0';
     }
 
+    Line(const Line &other) {
+        capacity = other.capacity;
+        length = other.length;
+        text = new char[capacity];
+        std::strcpy(text, other.text);
+    }
+
+    Line &operator=(const Line &other) {
+        if (this != &other) {
+            delete[] text;
+            capacity = other.capacity;
+            length = other.length;
+            text = new char[capacity];
+            std::strcpy(text, other.text);
+        }
+        return *this;
+    }
+
     ~Line() {
         delete[] text;
     }
 
     void appendText(const char *str) {
-        size_t newLength = length + strlen(str);
+        size_t newLength = length + std::strlen(str);
         if (newLength >= capacity) {
             capacity = newLength + 1;
             char *newText = new char[capacity];
-            strcpy(newText, text);
+            std::strcpy(newText, text);
             delete[] text;
             text = newText;
         }
-        strcat(text, str);
+        std::strcat(text, str);
         length = newLength;
     }
+
     void insertText(size_t pos, const char *str) {
         if (pos > length) {
             std::cerr << "Position out of bounds\n";
             return;
         }
-        size_t newLength = length + strlen(str);
+        size_t newLength = length + std::strlen(str);
         if (newLength >= capacity) {
             capacity = newLength + 1;
             char *newText = new char[capacity];
-            strncpy(newText, text, pos);
+            std::strncpy(newText, text, pos);
             newText[pos] = '\0';
-            strcat(newText, str);
-            strcat(newText, text + pos);
+            std::strcat(newText, str);
+            std::strcat(newText, text + pos);
             delete[] text;
             text = newText;
         } else {
-            memmove(text + pos + strlen(str), text + pos, length - pos + 1);
-            memcpy(text + pos, str, strlen(str));
+            std::memmove(text + pos + std::strlen(str), text + pos, length - pos + 1);
+            std::memcpy(text + pos, str, std::strlen(str));
         }
         length = newLength;
     }
+
     void deleteText(size_t pos, size_t len) {
         if (pos >= length || pos + len > length) {
             std::cerr << "Position and length out of bounds\n";
             return;
         }
-        memmove(text + pos, text + pos + len, length - pos - len + 1);
+        std::memmove(text + pos, text + pos + len, length - pos - len + 1);
         length -= len;
     }
+
     void insertWithReplace(size_t pos, const char *str) {
         if (pos > length) {
             std::cerr << "Position out of bounds\n";
             return;
         }
-        size_t strLength = strlen(str);
+        size_t strLength = std::strlen(str);
         size_t newLength = pos + strLength;
 
         if (newLength >= capacity) {
             capacity = newLength + 1;
             char *newText = new char[capacity];
-            strncpy(newText, text, pos);
+            std::strncpy(newText, text, pos);
             newText[pos] = '\0';
-            strcat(newText, str);
+            std::strcat(newText, str);
             if (pos + strLength < length) {
-                strcat(newText, text + pos + strLength);
+                std::strcat(newText, text + pos + strLength);
             }
             delete[] text;
             text = newText;
         } else {
-            strncpy(text + pos, str, strLength);
+            std::strncpy(text + pos, str, strLength);
             if (newLength < length) {
-                memmove(text + newLength, text + pos + strLength, length - pos - strLength + 1);
+                std::memmove(text + newLength, text + pos + strLength, length - pos - strLength + 1);
             } else {
                 text[newLength] = '\0';
             }
@@ -99,6 +120,9 @@ public:
         return text;
     }
 
+    size_t getTextLength() const {
+        return length;
+    }
 };
 
 class TextStorage {
@@ -133,6 +157,7 @@ public:
         lines = new Line[capacity];
         clipboard = nullptr;
     }
+
     ~TextStorage() {
         deleteLines();
         if (clipboard) delete[] clipboard;
@@ -145,9 +170,11 @@ public:
             redoStack.pop();
         }
     }
+
     size_t getLineCount() const {
         return count;
     }
+
     void appendText(size_t lineIndex, const char *text) {
         if (lineIndex >= count) {
             std::cerr << "Line index out of bounds\n";
@@ -156,18 +183,21 @@ public:
         saveState();
         lines[lineIndex].appendText(text);
     }
+
     void addNewLine() {
         if (count >= capacity) {
             capacity *= 2;
             Line *newLines = new Line[capacity];
             for (size_t i = 0; i < count; ++i) {
-                newLines[i].appendText(lines[i].getText());
+                newLines[i] = lines[i];
             }
             delete[] lines;
             lines = newLines;
         }
+
         lines[count++] = Line();
     }
+
     void saveToFile(const char *filename) const {
         std::ofstream outFile(filename);
         if (!outFile) {
@@ -180,6 +210,7 @@ public:
         outFile.close();
         std::cout << "Text has been saved successfully\n";
     }
+
     void loadFromFile(const char *filename) {
         std::ifstream inFile(filename);
         if (!inFile) {
@@ -207,11 +238,13 @@ public:
         inFile.close();
         std::cout << "Text has been loaded successfully\n";
     }
+
     void printText() const {
         for (size_t i = 0; i < count; ++i) {
             std::cout << lines[i].getText() << std::endl;
         }
     }
+
     void insertText(size_t lineIndex, size_t pos, const char *text) {
         if (lineIndex >= count) {
             std::cerr << "Line index out of bounds\n";
@@ -219,22 +252,23 @@ public:
         }
         saveState();
         lines[lineIndex].insertText(pos, text);
+    }
 
-    };
     void searchText(const char *substring) const {
         bool found = false;
         for (size_t i = 0; i < count; ++i) {
-            const char *pos = strstr(lines[i].getText(), substring);
+            const char *pos = std::strstr(lines[i].getText(), substring);
             while (pos) {
                 std::cout << "Text is present in this position: " << i << " " << pos - lines[i].getText() << std::endl;
                 found = true;
-                pos = strstr(pos + 1, substring);
+                pos = std::strstr(pos + 1, substring);
             }
         }
         if (!found) {
             std::cout << "Substring not found\n";
         }
     }
+
     void deleteText(size_t lineIndex, size_t pos, size_t len) {
         if (lineIndex >= count) {
             std::cerr << "Line index out of bounds\n";
@@ -243,6 +277,7 @@ public:
         saveState();
         lines[lineIndex].deleteText(pos, len);
     }
+
     void undo() {
         if (undoStack.empty()) {
             std::cerr << "No more undo steps available\n";
@@ -252,6 +287,7 @@ public:
         lines = undoStack.top();
         undoStack.pop();
     }
+
     void redo() {
         if (redoStack.empty()) {
             std::cerr << "No more redo steps available\n";
@@ -261,14 +297,25 @@ public:
         lines = redoStack.top();
         redoStack.pop();
     }
+
     void cutText(size_t lineIndex, size_t pos, size_t len) {
         if (lineIndex >= count) {
             std::cerr << "Line index out of bounds\n";
             return;
         }
         saveState();
-        copyText(lineIndex, pos, len);
-        deleteText(lineIndex, pos, len);
+        const char *lineText = lines[lineIndex].getText();
+        if (pos + len > lines[lineIndex].getTextLength()) {
+            std::cerr << "Position and length out of bounds\n";
+            return;
+        }
+        if (clipboard) {
+            delete[] clipboard;
+        }
+        clipboard = new char[len + 1];
+        std::strncpy(clipboard, lineText + pos, len);
+        clipboard[len] = '\0';
+        lines[lineIndex].deleteText(pos, len);
     }
 
     void pasteText(size_t lineIndex, size_t pos) {
@@ -283,16 +330,25 @@ public:
         saveState();
         lines[lineIndex].insertText(pos, clipboard);
     }
+
     void copyText(size_t lineIndex, size_t pos, size_t len) {
         if (lineIndex >= count) {
             std::cerr << "Line index out of bounds\n";
             return;
         }
-        if (clipboard) delete[] clipboard;
+        const char *lineText = lines[lineIndex].getText();
+        if (pos + len > std::strlen(lineText)) {
+            std::cerr << "Position and length out of bounds\n";
+            return;
+        }
+        if (clipboard) {
+            delete[] clipboard;
+        }
         clipboard = new char[len + 1];
-        strncpy(clipboard, lines[lineIndex].getText() + pos, len);
+        std::strncpy(clipboard, lineText + pos, len);
         clipboard[len] = '\0';
     }
+
     void insertWithReplace(size_t lineIndex, size_t pos, const char *text) {
         if (lineIndex >= count) {
             std::cerr << "Line index out of bounds\n";
@@ -301,7 +357,6 @@ public:
         saveState();
         lines[lineIndex].insertWithReplace(pos, text);
     }
-
 
     typedef enum {
         append_text = 1,
@@ -347,7 +402,6 @@ int main() {
     char buffer[INITIAL_CAPACITY];
 
     while (true) {
-        system("clear");
         storage.printHelpInfo();
         std::cout << "> ";
         std::cin >> command;
@@ -390,7 +444,6 @@ int main() {
                 std::cin.getline(buffer, sizeof(buffer));
                 storage.searchText(buffer);
                 break;
-
             case TextStorage::delete_text: {
                 size_t lineIndex, position, length;
                 std::cout << "Choose line, index and length: ";
@@ -445,7 +498,6 @@ int main() {
             default:
                 std::cout << "The command is not implemented\n";
         }
-
     }
 
     return 0;
