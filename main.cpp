@@ -482,11 +482,6 @@ public:
         std::cout << "Decryption completed successfully.\n";
     }
 
-
-
-
-
-
     typedef enum {
         append_text = 1,
         start_new_line,
@@ -502,6 +497,10 @@ public:
         paste_text,
         copy_text,
         insert_with_replace,
+        encrypt_text,
+        decrypt_text,
+        encrypt_file,
+        decrypt_file,
         exit_program = 0
     } Command;
 
@@ -521,6 +520,10 @@ public:
         std::cout << "12. Paste text\n";
         std::cout << "13. Copy text\n";
         std::cout << "14. Insert text by line and symbol index with replacement\n";
+        std::cout << "15. Encryt text\n";
+        std::cout << "16. Decryt text\n";
+        std::cout << "17. Encryt file\n";
+        std::cout << "18. Decryt file\n";
         std::cout << "0. Exit\n";
     }
 };
@@ -529,6 +532,7 @@ int main() {
     TextStorage storage;
     int command;
     char buffer[INITIAL_CAPACITY];
+    CaesarLib caesarLib("/Users/arturnanivskij/Documents/text_editor/CaesarCipher.so");
 
     while (true) {
         storage.printHelpInfo();
@@ -619,6 +623,49 @@ int main() {
                 std::cout << "Enter text to replace: ";
                 std::cin.getline(buffer, sizeof(buffer));
                 storage.insertWithReplace(lineIndex, position, buffer);
+                break;
+            }
+
+            case TextStorage::encrypt_text: {
+                int shift;
+                std::cout << "Enter the encryption shift: ";
+                std::cin >> shift;
+                std::cin.ignore();
+                storage.encryptText(shift, caesarLib);
+                break;
+            }
+            case TextStorage::decrypt_text: {
+                int shift;
+                std::cout << "Enter the decryption shift: ";
+                std::cin >> shift;
+                std::cin.ignore();
+                storage.decryptText(shift, caesarLib);
+                break;
+            }
+            case TextStorage::encrypt_file: {
+                int shift;
+                std::cout << "Enter the encryption shift: ";
+                std::cin >> shift;
+                std::cin.ignore();
+                std::cout << "Enter the input file name: ";
+                std::cin.getline(buffer, sizeof(buffer));
+                std::cout << "Enter the output file name: ";
+                std::string outputFileName;
+                std::cin >> outputFileName;
+                storage.encryptFile(buffer, outputFileName.c_str(), shift, caesarLib);
+                break;
+            }
+            case TextStorage::decrypt_file: {
+                int shift;
+                std::cout << "Enter the decryption shift: ";
+                std::cin >> shift;
+                std::cin.ignore();
+                std::cout << "Enter the input file name: ";
+                std::cin.getline(buffer, sizeof(buffer));
+                std::cout << "Enter the output file name: ";
+                std::string outputFileName;
+                std::cin >> outputFileName;
+                storage.decryptFile(buffer, outputFileName.c_str(), shift, caesarLib);
                 break;
             }
             case TextStorage::exit_program:
