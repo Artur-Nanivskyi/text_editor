@@ -2,8 +2,56 @@
 #include <fstream>
 #include <cstring>
 #include <stack>
-
+#include <cctype>
+#include <dlfcn.h>
 #define INITIAL_CAPACITY 100
+
+typedef char* (*EncryptFunc)(char*, int);
+typedef char* (*DecryptFunc)(char*, int);
+
+
+class CaesarLib {
+private:
+    void* handle;
+    EncryptFunc encrypt;
+    DecryptFunc decrypt;
+
+public:
+    CaesarLib(const char* libPath) {
+        try {
+            handle = dlopen(libPath, RTLD_LAZY);
+            if (!handle) {
+                throw std::runtime_error(dlerror());
+            }
+
+            encrypt = (EncryptFunc)dlsym(handle, "encrypt");
+            decrypt = (DecryptFunc)dlsym(handle, "decrypt");
+
+            char* error;
+            if ((error = dlerror()) != NULL) {
+                throw std::runtime_error(error);
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "Error loading library or symbols: " << e.what() << std::endl;
+            std::cerr << "Path attempted: " << libPath << std::endl;
+            exit(1);
+        }
+    }
+
+    ~CaesarLib() {
+        if (handle) {
+            dlclose(handle);
+        }
+    }
+
+    char* encryptText(char* text, int shift) {
+        return encrypt(text, shift);
+    }
+
+    char* decryptText(char* text, int shift) {
+        return decrypt(text, shift);
+    }
+};
 
 class Line {
 private:
@@ -124,6 +172,9 @@ public:
         return length;
     }
 };
+
+
+
 
 class TextStorage {
 private:
@@ -303,18 +354,13 @@ public:
             std::cerr << "Line index out of bounds\n";
             return;
         }
-        saveState();
-        const char *lineText = lines[lineIndex].getText();
+
         if (pos + len > lines[lineIndex].getTextLength()) {
             std::cerr << "Position and length out of bounds\n";
             return;
         }
-        if (clipboard) {
-            delete[] clipboard;
-        }
-        clipboard = new char[len + 1];
-        std::strncpy(clipboard, lineText + pos, len);
-        clipboard[len] = '\0';
+        copyText(lineIndex, pos, len);
+        saveState();
         lines[lineIndex].deleteText(pos, len);
     }
 
@@ -357,6 +403,9 @@ public:
         saveState();
         lines[lineIndex].insertWithReplace(pos, text);
     }
+
+
+
 
     typedef enum {
         append_text = 1,
