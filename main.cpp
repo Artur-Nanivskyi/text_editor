@@ -430,6 +430,58 @@ public:
             delete[] textCopy;
         }
     }
+    void encryptFile(const char* inputFileName, const char* outputFileName, int shift, CaesarLib& caesarLib) {
+        std::ifstream inputFile(inputFileName);
+        if (!inputFile) {
+            std::cerr << "Error opening input file: " << inputFileName << std::endl;
+            return;
+        }
+
+        std::ofstream outputFile(outputFileName);
+        if (!outputFile) {
+            std::cerr << "Error opening output file: " << outputFileName << std::endl;
+            inputFile.close();
+            return;
+        }
+
+        std::string line;
+        while (std::getline(inputFile, line)) {
+            char* encrypted = caesarLib.encryptText(const_cast<char*>(line.c_str()), shift);
+            outputFile << encrypted << std::endl;
+            delete[] encrypted;
+        }
+
+        inputFile.close();
+        outputFile.close();
+        std::cout << "Encryption completed successfully.\n";
+    }
+
+    void decryptFile(const char* inputFileName, const char* outputFileName, int shift, CaesarLib& caesarLib) {
+        std::ifstream inputFile(inputFileName);
+        if (!inputFile) {
+            std::cerr << "Error opening input file: " << inputFileName << std::endl;
+            return;
+        }
+
+        std::ofstream outputFile(outputFileName);
+        if (!outputFile) {
+            std::cerr << "Error opening output file: " << outputFileName << std::endl;
+            inputFile.close();
+            return;
+        }
+
+        std::string line;
+        while (std::getline(inputFile, line)) {
+            char* decrypted = caesarLib.decryptText(const_cast<char*>(line.c_str()), shift);
+            outputFile << decrypted << std::endl;
+            delete[] decrypted;
+        }
+
+        inputFile.close();
+        outputFile.close();
+        std::cout << "Decryption completed successfully.\n";
+    }
+
 
 
 
