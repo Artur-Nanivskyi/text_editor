@@ -403,6 +403,34 @@ public:
         saveState();
         lines[lineIndex].insertWithReplace(pos, text);
     }
+    void encryptText(int shift, CaesarLib& caesarLib) {
+        for (size_t i = 0; i < count; ++i) {
+            const char* currentText = lines[i].getText();
+            char* textCopy = new char[strlen(currentText) + 1];
+            strcpy(textCopy, currentText);
+
+            char* encrypted = caesarLib.encryptText(textCopy, shift);
+            lines[i].insertWithReplace(0, encrypted);
+
+            delete[] encrypted;
+            delete[] textCopy;
+        }
+    }
+
+    void decryptText(int shift, CaesarLib& caesarLib) {
+        for (size_t i = 0; i < count; ++i) {
+            const char* currentText = lines[i].getText();
+            char* textCopy = new char[strlen(currentText) + 1];
+            strcpy(textCopy, currentText);
+
+            char* decrypted = caesarLib.decryptText(textCopy, shift);
+            lines[i].insertWithReplace(0, decrypted);
+
+            delete[] decrypted;
+            delete[] textCopy;
+        }
+    }
+
 
 
 
